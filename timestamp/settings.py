@@ -29,8 +29,8 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# Add this for Vercel
-ALLOWED_HOSTS = ['127.0.0.1', '.vercel.app', '.now.sh']
+# Add your Render domain
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '.onrender.com']
 
 # Application definition
 
@@ -46,12 +46,14 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # added for render setup
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'app.middleware.PyCacheCleanerMiddleware',
 ]
 
 ROOT_URLCONF = 'timestamp.urls'
@@ -130,7 +132,54 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 
+# Use WhiteNoise for static file serving
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# These settings will delete ALL __pycache__ directories every 100 seconds
+PYCACHE_CLEANER_ENABLED = True
+PYCACHE_CLEANUP_INTERVAL = 100    # Every 100 seconds (very aggressive)
+PYCACHE_MAX_SIZE_MB = 1          # Low threshold (1MB)
+PYCACHE_DELETE_ALL = True        # Ignores size - deletes everything
+
+# Paths to exclude from cleaning (optional)
+PYCACHE_EXCLUDED_PATHS = [
+    '/venv/',
+    '/env/',
+    '/node_modules/',
+    '/.git/',
+    # Add any other paths you want to exclude
+]
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'logs/django/pycache_cleaner.log',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'your_app_name.management.commands.clean_pycache': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'your_app_name.middleware': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
