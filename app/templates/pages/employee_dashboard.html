@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Time Clock</title>
+    <!-- Use Tailwind CSS for easy styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font import */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Header with navigation -->
+    <header class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <h1 class="text-2xl font-bold text-gray-800">Employee Dashboard</h1>
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-600">Welcome, {{ user.username }}</span>
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                        {% if user.profile.role == 'admin' %}bg-purple-100 text-purple-800{% elif user.profile.role == 'employee' %}bg-green-100 text-green-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                        {{ user.profile.role|title }}
+                    </span>
+                    <a href="{% url 'change_password' %}" class="px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition-colors duration-200">
+                        Change Password
+                    </a>
+                    <a href="{% url 'logout' %}" class="px-4 py-2 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600 transition-colors duration-200">
+                        Log Out
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <!-- Django messages -->
+        {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                    <div class="p-4 rounded-md {% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Time Clock Section -->
+        <div class="bg-white rounded-lg shadow-md p-8 mb-6">
+            <div class="text-center">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Time Clock</h2>
+                <p class="text-lg text-gray-600 mb-6">Click the button to punch in or out.</p>
+                
+                <!-- Current time display -->
+                <div class="mb-6">
+                    <div id="current-time" class="text-3xl font-bold text-blue-600 mb-2"></div>
+                    <div id="current-date" class="text-lg text-gray-500"></div>
+                </div>
+
+                <!-- Timestamp Button -->
+                <button id="timestamp-btn" class="px-12 py-5 bg-blue-600 text-white font-bold rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+                    Punch In
+                </button>
+                
+                <p id="status-message" class="mt-4 text-center font-medium"></p>
+            </div>
+        </div>
+
+        <!-- Time Logs Section -->
+        <div class="bg-white rounded-lg shadow-md">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-800">Your Time Logs</h2>
+            </div>
+            
+            <div class="p-6">
+                <div id="logs-list" class="space-y-3 max-h-96 overflow-y-auto">
+                    <!-- Log entries will be added here by JavaScript -->
+                </div>
+                <p id="no-logs-message" class="text-gray-500 text-center py-8 hidden">No time logs found.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Use a self-invoking function to avoid global variables
+        (function() {
+
+            // DOM elements
+            const timestampBtn = document.getElementById('timestamp-btn');
+            const logsList = document.getElementById('logs-list');
+            const statusMessage = document.getElementById('status-message');
+            const noLogsMessage = document.getElementById('no-logs-message');
+            const currentTimeEl = document.getElementById('current-time');
+            const currentDateEl = document.getElementById('current-date');
+
+            // API Endpoints
+            const API_ENDPOINTS = {
+                fetchLogs: '/api/logs/',
+                createTimestamp: '/api/timestamp/'
+            };
+
+            // Update current time and date
+            function updateDateTime() {
+                const now = new Date();
+                const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+                const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                
+                currentTimeEl.textContent = now.toLocaleTimeString('en-US', timeOptions);
+                currentDateEl.textContent = now.toLocaleDateString('en-US', dateOptions);
+            }
+
+            // Update time every second
+            setInterval(updateDateTime, 1000);
+            updateDateTime(); // Initial call
+            
+            // Function to display a status message to the user
+            function displayStatus(message, isError = false) {
+                statusMessage.textContent = message;
+                if (isError) {
+                    statusMessage.className = 'mt-4 text-center font-medium text-red-600';
+                } else {
+                    statusMessage.className = 'mt-4 text-center font-medium text-green-600';
+                }
+                
+                // Clear message after 5 seconds
+                setTimeout(() => {
+                    statusMessage.textContent = '';
+                }, 5000);
+            }
+
+            // Function to format a date nicely
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                const options = { 
+                    weekday: 'short', 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true
+                };
+                return date.toLocaleDateString('en-US', options);
+            }
+
+            // Function to render the time logs on the page
+            function renderLogs(logs) {
+                logsList.innerHTML = ''; // Clear previous logs
+                if (logs.length === 0) {
+                    noLogsMessage.classList.remove('hidden');
+                    return;
+                }
+                noLogsMessage.classList.add('hidden');
+
+                logs.forEach(log => {
+                    const logElement = document.createElement('div');
+                    const action = log.is_entry ? 'Punched In' : 'Punched Out';
+                    const actionColor = log.is_entry ? 'border-l-green-500 bg-green-50' : 'border-l-red-500 bg-red-50';
+                    const iconColor = log.is_entry ? 'text-green-600' : 'text-red-600';
+                    const icon = log.is_entry ? '→' : '←';
+
+                    logElement.className = `p-4 border-l-4 rounded-r-lg ${actionColor} transition-all duration-200 hover:shadow-md`;
+                    logElement.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <span class="text-2xl ${iconColor} mr-3">${icon}</span>
+                                <div>
+                                    <p class="font-semibold text-gray-800">${action}</p>
+                                    <p class="text-sm text-gray-600">${formatDate(log.timestamp)}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-gray-500">
+                                    ${new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    logsList.appendChild(logElement);
+                });
+            }
+
+            // Function to determine the button's state (Punch In/Out)
+            function updateButtonState(lastLog) {
+                if (!lastLog) {
+                    // No logs found, so the next action is to punch in
+                    timestampBtn.textContent = 'Punch In';
+                    timestampBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    timestampBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                } else {
+                    if (lastLog.is_entry) {
+                        // The last action was an entry, so the next is an exit
+                        timestampBtn.textContent = 'Punch Out';
+                        timestampBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                        timestampBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                    } else {
+                        // The last action was an exit, so the next is an entry
+                        timestampBtn.textContent = 'Punch In';
+                        timestampBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                        timestampBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    }
+                }
+            }
+
+            // Function to fetch the user's time logs from the backend
+            async function fetchUserLogs() {
+                try {
+                    const response = await fetch(API_ENDPOINTS.fetchLogs);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const logs = await response.json();
+                    
+                    // Sort logs by timestamp to ensure the latest is at the top
+                    logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    
+                    renderLogs(logs);
+                    updateButtonState(logs.length > 0 ? logs[0] : null);
+                } catch (error) {
+                    console.error('Error fetching logs:', error);
+                    displayStatus('Failed to load logs. Please try again.', true);
+                }
+            }
+
+            // Function to handle the button click for creating a timestamp
+            async function handleTimestamp() {
+                // Disable the button to prevent multiple clicks
+                const originalText = timestampBtn.textContent;
+                timestampBtn.disabled = true;
+                timestampBtn.textContent = 'Processing...';
+
+                try {
+                    const response = await fetch(API_ENDPOINTS.createTimestamp, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            // Add CSRF token header for Django
+                            'X-CSRFToken': getCookie('csrftoken'),
+                        },
+                        body: JSON.stringify({})
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to record timestamp');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Display success message and re-fetch logs to update the UI
+                    displayStatus(data.message || 'Timestamp recorded successfully!');
+                    fetchUserLogs();
+
+                } catch (error) {
+                    console.error('Error creating timestamp:', error);
+                    displayStatus(`Failed to record timestamp: ${error.message}`, true);
+                    timestampBtn.textContent = originalText;
+                } finally {
+                    // Re-enable the button after the process is complete
+                    timestampBtn.disabled = false;
+                }
+            }
+            
+            // Function to get the CSRF token from a cookie
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.startsWith(name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            // Event Listeners and Initial Load
+            document.addEventListener('DOMContentLoaded', () => {
+                timestampBtn.addEventListener('click', handleTimestamp);
+                fetchUserLogs(); // Fetch logs on page load
+            });
+
+        })();
+    </script>
+
+</body>
+</html>
