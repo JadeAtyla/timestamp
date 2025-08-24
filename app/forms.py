@@ -23,7 +23,6 @@ class RegistrationForm(UserCreationForm):
     A form for new user registration with a role choice.
     """
     ROLE_CHOICES = (
-        ('admin', 'Admin'),
         ('employee', 'Employee'),
         ('intern', 'Intern'),
     )
@@ -42,10 +41,7 @@ class RegistrationForm(UserCreationForm):
         role = self.cleaned_data['role']
         
         # Set Django's built-in permissions based on the role
-        if role == 'admin':
-            user.is_superuser = True
-            user.is_staff = True
-        elif role == 'employee':
+        if role == 'employee':
             user.is_superuser = False
             user.is_staff = True
         elif role == 'intern':
