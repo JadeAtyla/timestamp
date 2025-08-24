@@ -1,0 +1,140 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}My App{% endblock %}</title>
+    <!-- Use Tailwind CSS for easy styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font import */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Adjust main content for sidebar */
+        .content-area {
+            margin-left: 16rem; /* Match sidebar width */
+        }
+        @media (max-width: 1024px) {
+            .content-area {
+                margin-left: 0;
+            }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Include the reusable sidebar component -->
+    {% include "components/sidebar.html" %}
+
+    <!-- Main content container -->
+    <div class="content-area">
+
+        <!-- This is a placeholder for a dynamic header, but the sidebar will replace the need for it. -->
+        {% comment %}
+        <header class="bg-white shadow-md">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <h1 class="text-2xl font-bold text-gray-800">{% block header_title %}{% endblock %}</h1>
+                    {% block header_actions %}{% endblock %}
+                </div>
+            </div>
+        </header>
+        {% endcomment %}
+
+        <!-- Include the reusable breadcrumb component -->
+        {% include "components/breadcrumb.html" %}
+        <div id="isAdmin" hidden>{{ user.profile.role }}</div>
+        <!-- Main content area -->
+        <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Scripts go here -->
+    <script src="{% static 'js/breadcrumb.js' %}"></script>
+    <script src="{% static 'js/sidebar.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Output Django boolean directly, no need for JSON.parse
+            const isAdmin = document.getElementById("isAdmin").textContent.trim().toLowerCase() === "admin";
+            
+            let sidebarLinks = [];
+
+            if (isAdmin) {
+                sidebarLinks = [
+                    {
+                        label: "Admin Dashboard",
+                        url: "{% url 'admin_dashboard' %}",
+                        icon: '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-5.5 10a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm9 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"></path></svg>',
+                        isDashboard: true
+                    }
+                ];
+            } else {
+                sidebarLinks = [
+                    {
+                        label: "Employee Dashboard",
+                        url: "{% url 'employee_dashboard' %}",
+                        icon: '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-5.5 10a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm9 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"></path></svg>',
+                        isDashboard: true
+                    }
+                ];
+            }
+
+            sidebarLinks.push(
+                { 
+                    label: 'Change Password', 
+                    url: '{% url "change_password" %}', 
+                    icon: '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM3 9.25a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V10a.75.75 0 01.75-.75zM17.25 10a.75.75 0 00-1.5 0v1.5a.75.75 0 001.5 0V10zM10 15.25a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 15.25z"></path></svg>',
+                    isDashboard: false
+                },
+                {
+                    label: "Logout",
+                    url: "{% url 'logout' %}",
+                    icon: '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm0 2h12v10H3V5zm5 2a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>',
+                    isDashboard: false
+                }
+            );
+
+            // Enhanced sidebar population with breadcrumb integration
+            populateSidebar(sidebarLinks);
+            
+            // Add data attributes to sidebar links for better breadcrumb handling
+            setTimeout(() => {
+                const sidebarLinks = document.querySelectorAll('#sidebar a, .sidebar a');
+                sidebarLinks.forEach(link => {
+                    const linkText = link.textContent.trim();
+                    link.setAttribute('data-label', linkText);
+                    
+                    // Mark dashboard links
+                    if (linkText.includes('Dashboard')) {
+                        link.setAttribute('data-is-dashboard', 'true');
+                    }
+                });
+            }, 100);
+        });
+
+        // Clear breadcrumbs on logout
+        function clearBreadcrumbsOnLogout() {
+            if (window.breadcrumbManager) {
+                window.breadcrumbManager.clear();
+            }
+        }
+
+        // Handle logout link specifically
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('a[href]');
+            if (link && link.href.includes('logout')) {
+                clearBreadcrumbsOnLogout();
+            }
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

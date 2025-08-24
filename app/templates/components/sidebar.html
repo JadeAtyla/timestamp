@@ -1,0 +1,18 @@
+<!-- _sidebar.html -->
+<aside class="w-64 bg-white border-r border-gray-200 fixed top-0 left-0 h-screen overflow-y-auto transform -translate-x-full transition-transform duration-300 ease-in-out lg:translate-x-0 z-40">
+    <div class="p-4 mt-16">
+        <nav class="space-y-2" id="sidebar-nav">
+            <!-- Sidebar links will be dynamically inserted here -->
+        </nav>
+    </div>
+</aside>
+
+<!-- A simple overlay for mobile view to close the sidebar -->
+<div id="sidebar-overlay" class="fixed inset-0 bg-black opacity-0 transition-opacity duration-300 ease-in-out lg:hidden z-30 pointer-events-none"></div>
+
+<!-- A button to toggle the sidebar on mobile -->
+<button id="sidebar-toggle" class="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-full bg-blue-500 text-white shadow-lg">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+    </svg>
+</button>
