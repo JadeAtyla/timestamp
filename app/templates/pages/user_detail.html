@@ -29,7 +29,7 @@
     </header>
 
     <!-- Main content -->
-    <main class="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <main class="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <!-- User Info Card -->
         <div class="bg-white rounded-lg shadow-md mb-6">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -72,7 +72,13 @@
                 </div>
                 
                 <!-- Action buttons -->
-                <div class="mt-6 flex space-x-4">
+                <div class="mt-6 flex flex-wrap gap-4">
+                    <a href="{% url 'edit_work_config' target_user.id %}" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                        Edit Work Config
+                    </a>
+                    <a href="{% url 'user_payroll' target_user.id %}" class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors duration-200">
+                        View Payroll
+                    </a>
                     <a href="{% url 'admin_reset_password' target_user.id %}" class="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors duration-200">
                         Reset Password
                     </a>
@@ -80,10 +86,147 @@
             </div>
         </div>
 
-        <!-- Recent Timestamps -->
-        <div class="bg-white rounded-lg shadow-md">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Work Configuration -->
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800">Work Configuration</h3>
+                </div>
+                <div class="px-6 py-4">
+                    {% if work_config %}
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-3 bg-gray-50 rounded-lg">
+                                <p class="text-sm font-medium text-gray-600">Hours/Day</p>
+                                <p class="text-lg font-semibold text-gray-900">{{ work_config.hours_per_day }}</p>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded-lg">
+                                <p class="text-sm font-medium text-gray-600">Hourly Rate</p>
+                                <p class="text-lg font-semibold text-gray-900">${{ work_config.hourly_rate }}</p>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded-lg">
+                                <p class="text-sm font-medium text-gray-600">Cutoff Type</p>
+                                <p class="text-sm font-semibold text-gray-900">{{ work_config.get_cutoff_type_display }}</p>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded-lg">
+                                <p class="text-sm font-medium text-gray-600">Bonus</p>
+                                <p class="text-lg font-semibold text-gray-900">${{ work_config.bonus }}</p>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="text-gray-500">No work configuration found.</p>
+                        <a href="{% url 'edit_work_config' target_user.id %}" class="mt-2 inline-block px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                            Set Up Configuration
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Current Payroll Period -->
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800">Current Payroll Period</h3>
+                </div>
+                <div class="px-6 py-4">
+                    {% if current_payroll %}
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <span class="text-sm font-medium text-gray-600">Period:</span>
+                                <span class="text-sm font-semibold text-gray-900">
+                                    {{ current_payroll.start_date|date:"M d" }} - {{ current_payroll.end_date|date:"M d" }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                                <span class="text-sm font-medium text-gray-600">Total Hours:</span>
+                                <span class="text-sm font-semibold text-blue-900">{{ current_payroll.total_hours }}hrs</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                                <span class="text-sm font-medium text-gray-600">Gross Pay:</span>
+                                <span class="text-sm font-semibold text-green-900">${{ current_payroll.total_gross_pay }}</span>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                                <span class="text-sm font-medium text-gray-600">Deductions:</span>
+                                <span class="text-sm font-semibold text-red-900">-${{ current_payroll.total_deductions }}</span>
+                            </div>
+                            {% if current_payroll.bonus > 0 %}
+                            <div class="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                                <span class="text-sm font-medium text-gray-600">Bonus:</span>
+                                <span class="text-sm font-semibold text-yellow-900">+${{ current_payroll.bonus }}</span>
+                            </div>
+                            {% endif %}
+                            <div class="flex justify-between items-center p-3 bg-purple-100 rounded-lg border-2 border-purple-200">
+                                <span class="text-base font-semibold text-purple-800">Net Pay:</span>
+                                <span class="text-lg font-bold text-purple-900">${{ current_payroll.net_pay }}</span>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="text-gray-500">No current payroll period found.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Daily Summaries -->
+        <div class="bg-white rounded-lg shadow-md mt-6">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-800">Recent Time Logs</h2>
+                <h3 class="text-lg font-semibold text-gray-800">Recent Daily Work Summaries</h3>
+                <p class="text-sm text-gray-600">Daily attendance and pay calculations</p>
+            </div>
+            
+            <div class="px-6 py-4">
+                {% if recent_summaries %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time In</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time Out</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Late</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Pay</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for summary in recent_summaries %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        {{ summary.date|date:"M d, Y" }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ summary.time_in|default:"--" }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ summary.time_out|default:"--" }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ summary.total_hours }}hrs
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        {% if summary.late_deduction_minutes > 0 %}
+                                            <span class="text-red-600">{{ summary.late_deduction_minutes }}min</span>
+                                        {% else %}
+                                            <span class="text-green-600">On time</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                        ${{ summary.net_pay }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-gray-500 text-center py-8">No daily summaries available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Timestamps -->
+        <div class="bg-white rounded-lg shadow-md mt-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">Recent Time Logs</h3>
+                <p class="text-sm text-gray-600">Raw timestamp data</p>
             </div>
             <div class="px-6 py-4">
                 {% if recent_timestamps %}

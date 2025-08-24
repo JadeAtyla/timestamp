@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll Management - {{ target_user.username }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <h1 class="text-2xl font-bold text-gray-800">Payroll Management</h1>
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'user_detail' target_user.id %}" class="px-4 py-2 bg-gray-500 text-white text-sm font-semibold rounded-lg hover:bg-gray-600 transition-colors duration-200">
+                        Back to User
+                    </a>
+                    <a href="{% url 'admin_dashboard' %}" class="px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition-colors duration-200">
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <!-- User Info -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-12 w-12">
+                        <div class="h-12 w-12 rounded-full bg-gray-300 flex items-center justify-center">
+                            <span class="text-lg font-medium text-gray-700">{{ target_user.username|slice:":2"|upper }}</span>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-xl font-semibold text-gray-900">{{ target_user.username }}</h2>
+                        <p class="text-gray-600">{{ target_user.first_name }} {{ target_user.last_name }}</p>
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                            {% if target_user.profile.role == 'admin' %}bg-purple-100 text-purple-800{% elif target_user.profile.role == 'employee' %}bg-green-100 text-green-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                            {{ target_user.profile.role|title }}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Generate Payroll Form -->
+                <div class="flex space-x-4">
+                    <form method="post" action="{% url 'generate_payroll' target_user.id %}" class="flex space-x-2">
+                        {% csrf_token %}
+                        <input type="date" name="start_date" required class="px-3 py-2 border border-gray-300 rounded-md text-sm">
+                        <input type="date" name="end_date" required class="px-3 py-2 border border-gray-300 rounded-md text-sm">
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors duration-200">
+                            Generate Payroll
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Django messages -->
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="p-4 rounded-md {% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Payroll Periods -->
+        <div class="bg-white rounded-lg shadow-md">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">Payroll Periods</h3>
+                <p class="text-sm text-gray-600 mt-1">All payroll periods for {{ target_user.username }}</p>
+            </div>
+            
+            <div class="p-6">
+                {% if payroll_periods %}
+                    <div class="space-y-4">
+                        {% for payroll in payroll_periods %}
+                            <div class="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-gray-900">
+                                            {{ payroll.start_date|date:"M d, Y" }} - {{ payroll.end_date|date:"M d, Y" }}
+                                        </h4>
+                                        <p class="text-sm text-gray-600">{{ payroll.get_period_type_display }}</p>
+                                        {% if payroll.is_finalized %}
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Finalized</span>
+                                        {% else %}
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Draft</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-2xl font-bold text-green-600">${{ payroll.net_pay }}</p>
+                                        <p class="text-sm text-gray-500">{{ payroll.total_hours }} hours worked</p>
+                                    </div>
+                                </div>
+
+                                <!-- Payroll Breakdown -->
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                                    <div class="text-center p-3 bg-green-50 rounded-lg">
+                                        <p class="text-sm font-medium text-green-800">Gross Pay</p>
+                                        <p class="text-lg font-semibold text-green-600">${{ payroll.total_gross_pay }}</p>
+                                    </div>
+                                    <div class="text-center p-3 bg-red-50 rounded-lg">
+                                        <p class="text-sm font-medium text-red-800">Deductions</p>
+                                        <p class="text-lg font-semibold text-red-600">-${{ payroll.total_deductions }}</p>
+                                    </div>
+                                    <div class="text-center p-3 bg-yellow-50 rounded-lg">
+                                        <p class="text-sm font-medium text-yellow-800">Bonus</p>
+                                        <p class="text-lg font-semibold text-yellow-600">${{ payroll.bonus }}</p>
+                                    </div>
+                                    <div class="text-center p-3 bg-blue-50 rounded-lg">
+                                        <p class="text-sm font-medium text-blue-800">Total Hours</p>
+                                        <p class="text-lg font-semibold text-blue-600">{{ payroll.total_hours }}hrs</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <p class="text-gray-500">No payroll periods found.</p>
+                        <p class="text-sm text-gray-400 mt-1">Use the form above to generate a payroll period.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Daily Summaries -->
+        <div class="bg-white rounded-lg shadow-md mt-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">Recent Daily Work Summaries</h3>
+                <p class="text-sm text-gray-600 mt-1">Daily attendance and pay calculations</p>
+            </div>
+            
+            <div class="p-6">
+                {% if recent_summaries %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time In</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time Out</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Late (Min)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deduction (Min)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gross Pay</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deductions</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Net Pay</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for summary in recent_summaries %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        {{ summary.date|date:"M d, Y" }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ summary.time_in|default:"--" }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ summary.time_out|default:"--" }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ summary.total_hours }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        {% if summary.late_minutes > 0 %}
+                                            <span class="text-red-600">{{ summary.late_minutes }}</span>
+                                        {% else %}
+                                            <span class="text-green-600">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        {% if summary.late_deduction_minutes > 0 %}
+                                            <span class="text-red-600">{{ summary.late_deduction_minutes }}</span>
+                                        {% else %}
+                                            <span class="text-green-600">0</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                                        ${{ summary.gross_pay }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                                        -${{ summary.deductions }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                        ${{ summary.net_pay }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <p class="text-gray-500">No daily summaries found.</p>
+                        <p class="text-sm text-gray-400 mt-1">Daily summaries are automatically generated when employees punch in/out.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

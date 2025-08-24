@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Work Configuration - {{ target_user.username }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <h1 class="text-2xl font-bold text-gray-800">Edit Work Configuration</h1>
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'user_detail' target_user.id %}" class="px-4 py-2 bg-gray-500 text-white text-sm font-semibold rounded-lg hover:bg-gray-600 transition-colors duration-200">
+                        Back to User
+                    </a>
+                    <a href="{% url 'admin_dashboard' %}" class="px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition-colors duration-200">
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="max-w-2xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <!-- User Info -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 h-12 w-12">
+                    <div class="h-12 w-12 rounded-full bg-gray-300 flex items-center justify-center">
+                        <span class="text-lg font-medium text-gray-700">{{ target_user.username|slice:":2"|upper }}</span>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <h2 class="text-xl font-semibold text-gray-900">{{ target_user.username }}</h2>
+                    <p class="text-gray-600">{{ target_user.first_name }} {{ target_user.last_name }}</p>
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                        {% if target_user.profile.role == 'admin' %}bg-purple-100 text-purple-800{% elif target_user.profile.role == 'employee' %}bg-green-100 text-green-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                        {{ target_user.profile.role|title }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Django messages -->
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="p-4 rounded-md {% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Work Configuration Form -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="border-b border-gray-200 pb-4 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800">Work Configuration</h3>
+                <p class="text-sm text-gray-600 mt-1">Configure work hours, pay rate, and payroll settings for this employee.</p>
+            </div>
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Hours per Day -->
+                <div>
+                    <label for="{{ form.hours_per_day.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.hours_per_day.label }}
+                    </label>
+                    {{ form.hours_per_day }}
+                    {% if form.hours_per_day.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.hours_per_day.help_text }}</p>
+                    {% endif %}
+                    {% if form.hours_per_day.errors %}
+                        <div class="mt-1">
+                            {% for error in form.hours_per_day.errors %}
+                                <p class="text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Hourly Rate -->
+                <div>
+                    <label for="{{ form.hourly_rate.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.hourly_rate.label }}
+                    </label>
+                    {{ form.hourly_rate }}
+                    {% if form.hourly_rate.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.hourly_rate.help_text }}</p>
+                    {% endif %}
+                    {% if form.hourly_rate.errors %}
+                        <div class="mt-1">
+                            {% for error in form.hourly_rate.errors %}
+                                <p class="text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Cutoff Type -->
+                <div>
+                    <label for="{{ form.cutoff_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.cutoff_type.label }}
+                    </label>
+                    {{ form.cutoff_type }}
+                    {% if form.cutoff_type.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.cutoff_type.help_text }}</p>
+                    {% endif %}
+                    {% if form.cutoff_type.errors %}
+                        <div class="mt-1">
+                            {% for error in form.cutoff_type.errors %}
+                                <p class="text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Bonus -->
+                <div>
+                    <label for="{{ form.bonus.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.bonus.label }}
+                    </label>
+                    {{ form.bonus }}
+                    {% if form.bonus.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.bonus.help_text }}</p>
+                    {% endif %}
+                    {% if form.bonus.errors %}
+                        <div class="mt-1">
+                            {% for error in form.bonus.errors %}
+                                <p class="text-sm text-red-600">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="flex space-x-4">
+                    <button type="submit" class="flex-1 py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                        Save Configuration
+                    </button>
+                    <a href="{% url 'user_detail' target_user.id %}" class="flex-1 py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 text-center">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Deduction Rules -->
+        <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+            <div class="border-b border-gray-200 pb-4 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800">Payroll Calculation Rules</h3>
+                <p class="text-sm text-gray-600 mt-1">Understanding how deductions and pay are calculated.</p>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Late Policy -->
+                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <h4 class="text-sm font-semibold text-red-800 mb-2">Late Policy</h4>
+                    <ul class="text-sm text-red-700 space-y-1">
+                        <li>• Being late by 1 minute = 15 minutes deduction</li>
+                        <li>• Additional minutes after the first minute are added to the 15 minutes</li>
+                        <li>• Example: 5 minutes late = 19 minutes deduction (15 + 4)</li>
+                    </ul>
+                </div>
+
+                <!-- Work Hours -->
+                <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 class="text-sm font-semibold text-blue-800 mb-2">Work Hours Calculation</h4>
+                    <ul class="text-sm text-blue-700 space-y-1">
+                        <li>• Expected work start time: 8:00 AM</li>
+                        <li>• Total hours worked = Time Out - Time In</li>
+                        <li>• Undertime = Expected Hours - Actual Hours Worked</li>
+                        <li>• Both late time and undertime are deducted from pay</li>
+                    </ul>
+                </div>
+
+                <!-- Pay Calculation -->
+                <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h4 class="text-sm font-semibold text-green-800 mb-2">Pay Calculation</h4>
+                    <ul class="text-sm text-green-700 space-y-1">
+                        <li>• Gross Pay = Hours Worked × Hourly Rate</li>
+                        <li>• Deductions = (Late Minutes + Undertime Minutes) ÷ 60 × Hourly Rate</li>
+                        <li>• Net Pay = Gross Pay - Deductions + Bonus</li>
+                        <li>• Calculations are updated daily and summed by payroll period</li>
+                    </ul>
+                </div>
+
+                <!-- Cutoff Types -->
+                <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <h4 class="text-sm font-semibold text-yellow-800 mb-2">Payroll Cutoff Types</h4>
+                    <ul class="text-sm text-yellow-700 space-y-1">
+                        <li>• <strong>15th and 30th:</strong> Two payrolls per month (1st-15th, 16th-30th/31st)</li>
+                        <li>• <strong>Weekly:</strong> Monday to Sunday payroll periods</li>
+                        <li>• <strong>Daily:</strong> Payroll calculated daily</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Configuration Preview -->
+        {% if work_config %}
+        <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+            <div class="border-b border-gray-200 pb-4 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800">Current Configuration</h3>
+                <p class="text-sm text-gray-600 mt-1">Preview of the current work configuration.</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="p-3 bg-gray-50 rounded-lg">
+                    <p class="text-sm font-medium text-gray-600">Expected Hours/Day</p>
+                    <p class="text-lg font-semibold text-gray-900">{{ work_config.hours_per_day }} hours</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-lg">
+                    <p class="text-sm font-medium text-gray-600">Hourly Rate</p>
+                    <p class="text-lg font-semibold text-gray-900">${{ work_config.hourly_rate }}</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-lg">
+                    <p class="text-sm font-medium text-gray-600">Payroll Cutoff</p>
+                    <p class="text-lg font-semibold text-gray-900">{{ work_config.get_cutoff_type_display }}</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-lg">
+                    <p class="text-sm font-medium text-gray-600">Bonus per Period</p>
+                    <p class="text-lg font-semibold text-gray-900">${{ work_config.bonus }}</p>
+                </div>
+            </div>
+
+            <!-- Calculation Examples -->
+            <div class="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <h4 class="text-sm font-semibold text-purple-800 mb-3">Example Calculations</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <p class="font-medium text-purple-800">Perfect Day:</p>
+                        <p class="text-purple-700">8hrs worked, on time</p>
+                        <p class="text-purple-700">Pay: {{ work_config.hours_per_day }} × ${{ work_config.hourly_rate }} = ${% widthratio work_config.hours_per_day 1 work_config.hourly_rate %}</p>
+                    </div>
+                    <div>
+                        <p class="font-medium text-purple-800">Late Day:</p>
+                        <p class="text-purple-700">8hrs worked, 5min late</p>
+                        <p class="text-purple-700">Deduction: 19min = ${% widthratio 19 60 work_config.hourly_rate %}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </main>
+
+</body>
+</html>

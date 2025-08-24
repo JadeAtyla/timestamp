@@ -12,10 +12,16 @@ urlpatterns = [
     
     # Password management
     path('change-password/', views.change_password, name='change_password'),
-    path('admin/reset-password/<int:user_id>/', views.admin_reset_password, name='admin_reset_password'),
+    path('user/reset-password/<int:user_id>/', views.admin_reset_password, name='admin_reset_password'),
     path('user/<int:user_id>/', views.user_detail, name='user_detail'),
+    
+    # Work configuration and payroll management
+    path('user/work-config/<int:user_id>/', views.edit_work_config, name='edit_work_config'),
+    path('user/payroll/<int:user_id>/', views.user_payroll, name='user_payroll'),
+    path('user/generate-payroll/<int:user_id>/', views.generate_payroll, name='generate_payroll'),
     
     # API endpoints for the frontend
     path('api/logs/', views.api_get_logs, name='api_get_logs'),
     path('api/timestamp/', views.api_create_timestamp, name='api_create_timestamp'),
+    path('api/payroll-summary/', views.api_get_payroll_summary, name='api_get_payroll_summary'),
 ]
